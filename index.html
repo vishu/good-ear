@@ -235,12 +235,12 @@
         Tone.Transport.cancel();
         Tone.Transport.clear();
 
-        // For testing, hardcode root to E (midi 52)
-        currentKeyRoot = 48 + Math.floor(Math.random() * 12);
+        // C3-B6
+        currentKeyRoot = 36 + Math.floor(Math.random() * 36);
         status.textContent = `Key: ${keyNameFromMidi(currentKeyRoot)} major`;
         buildKeyboard(currentKeyRoot);
 
-        Tone.Transport.scheduleOnce(() => playCadence(currentKeyRoot), "+0");
+        Tone.Transport.scheduleOnce(() => playCadence(48+currentKeyRoot%12), "+0");
 
         const targetIndex = Math.floor(Math.random() * 7); // 0 to 6 scale degrees
         const targetMidi = currentKeyRoot + majorScale[targetIndex];
