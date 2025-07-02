@@ -47,14 +47,17 @@
       color: black;
     }
     .active {
-      background-color: yellow !important;
+      background-color: #ff8;
       color: black;
     }
     .not-in-key.white-key {
-      background-color: #ccc !important;
+      background-color: #ccc;
     }
     .not-in-key.black-key {
-      background-color: #444 !important;
+      background-color: #444;
+    }
+    .not-in-key.active {
+      background-color: #cc6;
     }
     #startButton {
       margin-top: 2rem;
@@ -105,8 +108,11 @@
       }
 
       function isBlackKeyFromMidi(midi) {
-        const isBlack = [false, true, false, true, false, false, true, false, true, false, true, false, false];
-        return isBlack[midi % 12];
+        return [
+			false, true, false, true, false, false, true, false, true, false, true
+		][
+			midi % 12
+		];
       }
 
 
@@ -252,7 +258,11 @@
 
         Tone.Transport.scheduleOnce(() => playCadence(48+currentKeyRoot%12), "+0");
 
-        const targetMidi = currentKeyRoot + Math.floor(Math.random() * 13);
+		const targetMidi = currentKeyRoot + Math.floor(Math.random() * 13);
+		//
+		// const allowedTargetIndexes = [1,3,6,8,10];
+		// const targetIndex = allowedTargetIndexes[Math.floor(Math.random() * allowedTargetIndexes.length)];
+		//         const targetMidi = currentKeyRoot + targetIndex;
 
         Tone.Transport.scheduleOnce(() => {
           synth.triggerAttackRelease(Tone.Frequency(targetMidi, 'midi').toNote(), '2n');
