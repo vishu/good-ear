@@ -179,16 +179,16 @@
         // 6-2-5-7-1 chords (degrees 5,1,4,6,0) using 1-based scale indices, assuming minor/major as per chord quality
         // For simplicity: 6 minor (vi), 2 minor (ii), 5 dominant7 (V7), 7 diminished or dominant (vii° or vii7), 1 major (I)
         // We'll implement as minor, minor, dominant7, diminished triad, major triad
-        
+
         const chordDegrees = [6, 2, 5, 1];
         const chordTypes = ['minor', 'minor', 'dominant7', 'major'];
-        
+
         chordDegrees.forEach((degree, i) => {
           const type = chordTypes[i];
           const rootNote = root + majorScale[degree - 1];
           let chordIntervals;
-          
-          switch(type) {
+
+          switch (type) {
             case 'major':
               chordIntervals = [0, 4, 7];
               break;
@@ -204,10 +204,10 @@
             default:
               chordIntervals = [0, 4, 7];
           }
-          
+
           const notes = chordIntervals.map(interval => rootNote + interval);
           const time = `+${(i + 1) * 0.5}`;
-          
+
           Tone.Transport.scheduleOnce(() => {
             notes.forEach(note => {
               synth.triggerAttackRelease(Tone.Frequency(note, "midi").toNote(), "8n");
@@ -217,25 +217,24 @@
       }
 
       function scheduleWalk(currentKeyRoot, targetMidi) {
-		  
-		  const steps = [
-			  [0],
-			  [1,0],
-			  [2,0],
-			  [3,2,0],
-			  [4,2,0],
-			  [5,4,2,0],
-			  [6,7,9,11,12],
-			  [7,9,11,12],
-			  [8,9,11,12],
-			  [9,11,12],
-			  [10,11,12],
-			  [11,12],
-			  [12]
-		  ][targetMidi - currentKeyRoot];
+        const steps = [
+          [0],
+          [1, 0],
+          [2, 0],
+          [3, 2, 0],
+          [4, 2, 0],
+          [5, 4, 2, 0],
+          [6, 7, 9, 11, 12],
+          [7, 9, 11, 12],
+          [8, 9, 11, 12],
+          [9, 11, 12],
+          [10, 11, 12],
+          [11, 12],
+          [12]
+        ][targetMidi - currentKeyRoot];
 
         for (let i = 0; i < steps.length; i++) {
-			const midi = currentKeyRoot + steps[i];
+          const midi = currentKeyRoot + steps[i];
           const time = `+${(i + 1) * 0.5 + 4}`;
 
           Tone.Transport.scheduleOnce(() => {
@@ -244,7 +243,7 @@
             status.textContent = `♪ ${solfegeLabels[steps[i]]}`;
           }, time);
         }
-		return steps.length;
+        return steps.length;
       }
 
       async function startCycle() {
@@ -256,20 +255,15 @@
         status.textContent = `Key: ${keyNameFromMidi(currentKeyRoot)} major`;
         buildKeyboard(currentKeyRoot);
 
-        Tone.Transport.scheduleOnce(() => playCadence(48+currentKeyRoot%12), "+0");
+        Tone.Transport.scheduleOnce(() => playCadence(48 + currentKeyRoot % 12), "+0");
 
-		const targetMidi = currentKeyRoot + Math.floor(Math.random() * 13);
-		//
-		// const allowedTargetIndexes = [1,3,6,8,10];
-		// const targetIndex = allowedTargetIndexes[Math.floor(Math.random() * allowedTargetIndexes.length)];
-		//         const targetMidi = currentKeyRoot + targetIndex;
-
+        const targetMidi = currentKeyRoot + Math.floor(Math.random() * 13);
         Tone.Transport.scheduleOnce(() => {
           synth.triggerAttackRelease(Tone.Frequency(targetMidi, 'midi').toNote(), '2n');
           status.textContent = `Target Note`;
         }, "+3");
 
-		const totalStepsToTonic = scheduleWalk(currentKeyRoot, targetMidi);
+        const totalStepsToTonic = scheduleWalk(currentKeyRoot, targetMidi);
 
         const totalDuration = 4 + (totalStepsToTonic + 1) * 0.5 + 2;
 
