@@ -81,7 +81,7 @@
         return;
       }
 
-      const solfegeLabels = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Ti', 'Do'];
+      const solfegeLabels = ['Do', 'Ra', 'Re', 'Me', 'Mi', 'Fa', 'Se', 'Sol', 'Le', 'La', 'Te', 'Ti', 'Do'];
       const majorScale = [0, 2, 4, 5, 7, 9, 11, 12];
 
       const synth = new Tone.Sampler({
@@ -94,7 +94,6 @@
       }).toDestination();
 
       Tone.Transport.bpm.value = 120;
-      let currentKeyRoot = 52; // E
 
       const status = document.getElementById('status');
       const keyboard = document.getElementById('keyboard');
@@ -211,24 +210,35 @@
         });
       }
 
-      function scheduleWalk(targetIndex) {
-        const stepsDownToTonic = targetIndex + 1;
-        const stepsUpToTonic = majorScale.length - targetIndex;
-        const directionToTonic = stepsDownToTonic <= stepsUpToTonic ? -1 : +1;
-        const steps = directionToTonic === -1 ? stepsDownToTonic : stepsUpToTonic;
+      function scheduleWalk(currentKeyRoot, targetMidi) {
+		  
+		  const steps = [
+			  [0],
+			  [1,0],
+			  [2,0],
+			  [3,2,0],
+			  [4,2,0],
+			  [5,4,2,0],
+			  [6,7,9,11,12],
+			  [7,9,11,12],
+			  [8,9,11,12],
+			  [9,11,12],
+			  [10,11,12],
+			  [11,12],
+			  [12]
+		  ][targetMidi - currentKeyRoot];
 
-        for (let i = 0; i < steps; i++) {
-          let index = targetIndex + (i*directionToTonic)
-          const midi = currentKeyRoot + majorScale[index];
+        for (let i = 0; i < steps.length; i++) {
+			const midi = currentKeyRoot + steps[i];
           const time = `+${(i + 1) * 0.5 + 4}`;
 
           Tone.Transport.scheduleOnce(() => {
             synth.triggerAttackRelease(Tone.Frequency(midi, 'midi').toNote(), '8n');
             highlightKey(midi);
-            status.textContent = `♪ ${solfegeLabels[index]}`;
+            status.textContent = `♪ ${solfegeLabels[steps[i]]}`;
           }, time);
         }
-		return steps;
+		return steps.length;
       }
 
       async function startCycle() {
@@ -236,29 +246,20 @@
         Tone.Transport.clear();
 
         // C3-B6
-        currentKeyRoot = 36 + Math.floor(Math.random() * 36);
+        const currentKeyRoot = 36 + Math.floor(Math.random() * 36);
         status.textContent = `Key: ${keyNameFromMidi(currentKeyRoot)} major`;
         buildKeyboard(currentKeyRoot);
 
         Tone.Transport.scheduleOnce(() => playCadence(48+currentKeyRoot%12), "+0");
 
-        const targetIndex = Math.floor(Math.random() * 7); // 0 to 6 scale degrees
-        const targetMidi = currentKeyRoot + majorScale[targetIndex];
+        const targetMidi = currentKeyRoot + Math.floor(Math.random() * 13);
 
         Tone.Transport.scheduleOnce(() => {
           synth.triggerAttackRelease(Tone.Frequency(targetMidi, 'midi').toNote(), '2n');
           status.textContent = `Target Note`;
         }, "+3");
 
-        // scheduleWalk(targetIndex);
-        //
-        // const totalStepsToTonic = (() => {
-        //   const stepsDownToTonic = targetIndex;
-        //   const stepsUpToTonic = majorScale.length - targetIndex;
-        //   return stepsDownToTonic <= stepsUpToTonic ? stepsDownToTonic : stepsUpToTonic;
-        // })();
-		
-		const totalStepsToTonic = scheduleWalk(targetIndex);
+		const totalStepsToTonic = scheduleWalk(currentKeyRoot, targetMidi);
 
         const totalDuration = 4 + (totalStepsToTonic + 1) * 0.5 + 2;
 
