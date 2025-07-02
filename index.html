@@ -69,6 +69,17 @@
       border-radius: 8px;
       cursor: pointer;
     }
+    #stopButton {
+      margin-top: 2rem;
+      margin-left: 1rem;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -78,9 +89,10 @@
     <span id="degreeCheckboxes"></span>
   </div>
   <p id="status">Click start to begin.</p>
-  <button id="startButton">Start</button>
   <div class="keyboard" id="keyboard"></div>
-
+<button id="startButton">Start</button>
+  <button id="stopButton" style="display:none;">Stop</button>
+  
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (typeof Tone === 'undefined') {
@@ -171,6 +183,7 @@
       const status = document.getElementById('status');
       const keyboard = document.getElementById('keyboard');
       const startButton = document.getElementById('startButton');
+      const stopButton = document.getElementById('stopButton');
 
       function keyNameFromMidi(midi) {
         const notes = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -351,7 +364,17 @@
         await Tone.start();
         startButton.disabled = true;
         startButton.style.display = 'none';
+        stopButton.style.display = '';
         startCycle();
+      });
+
+      stopButton.addEventListener('click', () => {
+        Tone.Transport.stop();
+        Tone.Transport.cancel();
+        startButton.disabled = false;
+        startButton.style.display = '';
+        stopButton.style.display = 'none';
+        status.textContent = 'Stopped.';
       });
     });
   </script>
