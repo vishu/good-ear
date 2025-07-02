@@ -95,6 +95,42 @@
 
       // Settings panel setup
       const degreeCheckboxes = document.getElementById('degreeCheckboxes');
+
+      function setCookie(name, value, days) {
+        let expires = '';
+        if (days) {
+          const date = new Date();
+          date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+          expires = '; expires=' + date.toUTCString();
+        }
+        document.cookie = name + '=' + (value || '') + expires + '; path=/';
+      }
+
+      function getCookie(name) {
+        const nameEQ = name + '=';
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+          if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+      }
+
+      function saveDegreesToCookie() {
+        setCookie('targetDegrees', allowedTargetDegrees.join(','), 365);
+      }
+
+      function loadDegreesFromCookie() {
+        const cookie = getCookie('targetDegrees');
+        if (cookie) {
+          const arr = cookie.split(',').map(Number).filter(n => !isNaN(n) && n >= 0 && n < 13);
+          if (arr.length > 0) {
+            allowedTargetDegrees = arr;
+          }
+        }
+      }
+
       function renderDegreeCheckboxes() {
         degreeCheckboxes.innerHTML = '';
         for (let i = 0; i < 13; i++) {
@@ -103,19 +139,22 @@
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
           checkbox.value = i;
-          checkbox.checked = true;
+          checkbox.checked = allowedTargetDegrees.includes(i);
           checkbox.addEventListener('change', () => {
             allowedTargetDegrees = Array.from(document.querySelectorAll('#degreeCheckboxes input:checked')).map(cb => +cb.value);
             if (allowedTargetDegrees.length === 0) {
               checkbox.checked = true;
               allowedTargetDegrees = [i];
             }
+            saveDegreesToCookie();
           });
           label.appendChild(checkbox);
           label.appendChild(document.createTextNode(' ' + solfegeLabels[i]));
           degreeCheckboxes.appendChild(label);
         }
       }
+
+      loadDegreesFromCookie();
       renderDegreeCheckboxes();
 
       const synth = new Tone.Sampler({
