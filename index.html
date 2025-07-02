@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ear Training App</title>
+  <script src="https://cdn.jsdelivr.net/npm/tone@latest/build/Tone.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #777;
+      color: white;
+    }
+    .keyboard {
+      position: relative;
+      width: fit-content;
+      margin: 2rem auto;
+      height: 150px;
+      user-select: none;
+    }
+    .white-key {
+      position: relative;
+      width: 40px;
+      height: 150px;
+      background: white;
+      border: 1px solid #555;
+      display: inline-block;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .black-key {
+      position: absolute;
+      width: 25px;
+      height: 90px;
+      background: black;
+      top: 0;
+      z-index: 2;
+      border-radius: 0 0 3px 3px;
+    }
+    .key-label {
+      position: absolute;
+      bottom: 5px;
+      width: 100%;
+      font-size: 0.8rem;
+      text-align: center;
+      color: black;
+    }
+    .active {
+      background-color: yellow !important;
+      color: black;
+    }
+    .not-in-key.white-key {
+      background-color: #ccc !important;
+    }
+    .not-in-key.black-key {
+      background-color: #444 !important;
+    }
+    #startButton {
+      margin-top: 2rem;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎧 Ear Training App (Prototype)</h1>
+  <p id="status">Click start to begin.</p>
+  <button id="startButton">Start</button>
+  <div class="keyboard" id="keyboard"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof Tone === 'undefined') {
+        document.getElementById('status').textContent = 'Error: Tone.js not loaded.';
+        return;
+      }
+
+      const solfegeLabels = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Ti', 'Do'];
+      const majorScale = [0, 2, 4, 5, 7, 9, 11, 12];
+
+      const synth = new Tone.Sampler({
+        urls: {
+          A4: "A4.mp3",
+          C5: "C5.mp3",
+        },
+        release: 1,
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+      }).toDestination();
+
+      Tone.Transport.bpm.value = 120;
+      let currentKeyRoot = 52; // E
+
+      const status = document.getElementById('status');
+      const keyboard = document.getElementById('keyboard');
+      const startButton = document.getElementById('startButton');
+
+      function keyNameFromMidi(midi) {
+        const notes = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+        return notes[midi % 12];
+      }
+
+      function isBlackKeyFromMidi(midi) {
+        const isBlack = [false, true, false, true, false, false, true, false, true, false, true, false, false];
+        return isBlack[midi % 12];
+      }
+
+
+      
+      function buildKeyboard(rootMidi) {
+        keyboard.innerHTML = '';
+        const whiteNotes = [];
+        const keyMap = [];
+
+        for (let i = 0; i < 13; i++) {
+          const midi = rootMidi + i;
+          const noteRelativeToRoot = (midi - rootMidi + 12) % 12;
+          const inKey = majorScale.includes(noteRelativeToRoot);
+          const isBlack = isBlackKeyFromMidi(midi);
+          keyMap.push({ midi, inKey, isBlack });
+        }
+
+        let whiteKeyCount = 0;
+        keyMap.forEach(({ midi, inKey, isBlack }) => {
+          if (!isBlack) {
+            const key = document.createElement('div');
+            key.classList.add('white-key');
+            if (!inKey) key.classList.add('not-in-key');
+            key.dataset.midi = midi;
+
+            keyboard.appendChild(key);
+            whiteNotes.push({ midi, element: key, index: whiteKeyCount });
+            whiteKeyCount++;
+          }
+        });
+
+        keyMap.forEach(({ midi, inKey, isBlack }) => {
+          if (isBlack) {
+            // Find left position between surrounding white keys
+            let left = -10;
+			if(midi > whiteNotes[whiteNotes.length - 1].midi) {
+				left = 30 + (40*(whiteNotes.length-1));
+			}
+            for (let j = 0; j < whiteNotes.length - 1; j++) {
+              if (midi > whiteNotes[j].midi && midi < whiteNotes[j + 1].midi) {
+                left = j * 40 + 30;
+                break;
+              }
+            }
+
+            const key = document.createElement('div');
+            key.classList.add('black-key');
+            if (!inKey) key.classList.add('not-in-key');
+            key.dataset.midi = midi;
+            key.style.left = `${left}px`;
+            keyboard.appendChild(key);
+          }
+        });
+      }
+
+      function highlightKey(midi) {
+        document.querySelectorAll('[data-midi]').forEach(k => {
+          if (+k.dataset.midi === midi) k.classList.add('active');
+          else k.classList.remove('active');
+        });
+      }
+
+      async function playCadence(root) {
+        // 6-2-5-7-1 chords (degrees 5,1,4,6,0) using 1-based scale indices, assuming minor/major as per chord quality
+        // For simplicity: 6 minor (vi), 2 minor (ii), 5 dominant7 (V7), 7 diminished or dominant (vii° or vii7), 1 major (I)
+        // We'll implement as minor, minor, dominant7, diminished triad, major triad
+        
+        const chordDegrees = [6, 2, 5, 1];
+        const chordTypes = ['minor', 'minor', 'dominant7', 'major'];
+        
+        chordDegrees.forEach((degree, i) => {
+          const type = chordTypes[i];
+          const rootNote = root + majorScale[degree - 1];
+          let chordIntervals;
+          
+          switch(type) {
+            case 'major':
+              chordIntervals = [0, 4, 7];
+              break;
+            case 'minor':
+              chordIntervals = [0, 3, 7];
+              break;
+            case 'dominant7':
+              chordIntervals = [0, 4, 7, 10];
+              break;
+            case 'diminished':
+              chordIntervals = [0, 3, 6];
+              break;
+            default:
+              chordIntervals = [0, 4, 7];
+          }
+          
+          const notes = chordIntervals.map(interval => rootNote + interval);
+          const time = `+${(i + 1) * 0.5}`;
+          
+          Tone.Transport.scheduleOnce(() => {
+            notes.forEach(note => {
+              synth.triggerAttackRelease(Tone.Frequency(note, "midi").toNote(), "8n");
+            });
+          }, time);
+        });
+      }
+
+      function scheduleWalk(targetIndex) {
+        const stepsDownToTonic = targetIndex + 1;
+        const stepsUpToTonic = majorScale.length - targetIndex;
+        const directionToTonic = stepsDownToTonic <= stepsUpToTonic ? -1 : +1;
+        const steps = directionToTonic === -1 ? stepsDownToTonic : stepsUpToTonic;
+
+        for (let i = 0; i < steps; i++) {
+          let index = targetIndex + (i*directionToTonic)
+          const midi = currentKeyRoot + majorScale[index];
+          const time = `+${(i + 1) * 0.5 + 4}`;
+
+          Tone.Transport.scheduleOnce(() => {
+            synth.triggerAttackRelease(Tone.Frequency(midi, 'midi').toNote(), '8n');
+            highlightKey(midi);
+            status.textContent = `♪ ${solfegeLabels[index]}`;
+          }, time);
+        }
+		return steps;
+      }
+
+      async function startCycle() {
+        Tone.Transport.cancel();
+        Tone.Transport.clear();
+
+        // For testing, hardcode root to E (midi 52)
+        currentKeyRoot = 48 + Math.floor(Math.random() * 12);
+        status.textContent = `Key: ${keyNameFromMidi(currentKeyRoot)} major`;
+        buildKeyboard(currentKeyRoot);
+
+        Tone.Transport.scheduleOnce(() => playCadence(currentKeyRoot), "+0");
+
+        const targetIndex = Math.floor(Math.random() * 7); // 0 to 6 scale degrees
+        const targetMidi = currentKeyRoot + majorScale[targetIndex];
+
+        Tone.Transport.scheduleOnce(() => {
+          synth.triggerAttackRelease(Tone.Frequency(targetMidi, 'midi').toNote(), '2n');
+          status.textContent = `Target Note`;
+        }, "+3");
+
+        // scheduleWalk(targetIndex);
+        //
+        // const totalStepsToTonic = (() => {
+        //   const stepsDownToTonic = targetIndex;
+        //   const stepsUpToTonic = majorScale.length - targetIndex;
+        //   return stepsDownToTonic <= stepsUpToTonic ? stepsDownToTonic : stepsUpToTonic;
+        // })();
+		
+		const totalStepsToTonic = scheduleWalk(targetIndex);
+
+        const totalDuration = 4 + (totalStepsToTonic + 1) * 0.5 + 2;
+
+        Tone.Transport.scheduleOnce(() => {
+          startCycle();
+        }, `+${totalDuration}`);
+
+        Tone.Transport.start();
+      }
+
+      startButton.addEventListener('click', async () => {
+        await Tone.start();
+        startButton.disabled = true;
+        startButton.style.display = 'none';
+        startCycle();
+      });
+    });
+  </script>
+</body>
+</html>
