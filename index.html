@@ -84,14 +84,16 @@
 </head>
 <body>
   <h1>🎧 Ear Training App (Prototype)</h1>
-  <div id="settingsPanel" style="background:#444;padding:1rem 2rem;border-radius:10px;display:inline-block;margin-bottom:1rem;">
+  <p id="status">Click start to begin.</p>
+  <div class="keyboard" id="keyboard"></div>
+  <div id="buttons">
+    <button id="startButton">Start</button>
+    <button id="stopButton" style="display:none;">Stop</button>
+</div>
+  <div id="settingsPanel" style="margin-top:20px;background:#444;padding:1rem 2rem;border-radius:10px;display:inline-block;margin-bottom:1rem;">
     <strong>Target Degrees:</strong>
     <span id="degreeCheckboxes"></span>
   </div>
-  <p id="status">Click start to begin.</p>
-  <div class="keyboard" id="keyboard"></div>
-<button id="startButton">Start</button>
-  <button id="stopButton" style="display:none;">Stop</button>
   
   <script>
     document.addEventListener('DOMContentLoaded', () => {
