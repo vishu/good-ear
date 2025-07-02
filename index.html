@@ -73,6 +73,10 @@
 </head>
 <body>
   <h1>🎧 Ear Training App (Prototype)</h1>
+  <div id="settingsPanel" style="background:#444;padding:1rem 2rem;border-radius:10px;display:inline-block;margin-bottom:1rem;">
+    <strong>Target Degrees:</strong>
+    <span id="degreeCheckboxes"></span>
+  </div>
   <p id="status">Click start to begin.</p>
   <button id="startButton">Start</button>
   <div class="keyboard" id="keyboard"></div>
@@ -86,6 +90,33 @@
 
       const solfegeLabels = ['Do', 'Ra', 'Re', 'Me', 'Mi', 'Fa', 'Se', 'Sol', 'Le', 'La', 'Te', 'Ti', 'Do'];
       const majorScale = [0, 2, 4, 5, 7, 9, 11, 12];
+      // 13 degrees (0-12)
+      let allowedTargetDegrees = Array.from({length: 13}, (_, i) => i); // default: all
+
+      // Settings panel setup
+      const degreeCheckboxes = document.getElementById('degreeCheckboxes');
+      function renderDegreeCheckboxes() {
+        degreeCheckboxes.innerHTML = '';
+        for (let i = 0; i < 13; i++) {
+          const label = document.createElement('label');
+          label.style.marginRight = '0.5em';
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = i;
+          checkbox.checked = true;
+          checkbox.addEventListener('change', () => {
+            allowedTargetDegrees = Array.from(document.querySelectorAll('#degreeCheckboxes input:checked')).map(cb => +cb.value);
+            if (allowedTargetDegrees.length === 0) {
+              checkbox.checked = true;
+              allowedTargetDegrees = [i];
+            }
+          });
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(' ' + solfegeLabels[i]));
+          degreeCheckboxes.appendChild(label);
+        }
+      }
+      renderDegreeCheckboxes();
 
       const synth = new Tone.Sampler({
         urls: {
@@ -257,7 +288,10 @@
 
         Tone.Transport.scheduleOnce(() => playCadence(48 + currentKeyRoot % 12), "+0");
 
-        const targetMidi = currentKeyRoot + Math.floor(Math.random() * 13);
+        // Only pick from allowed degrees
+        const allowed = allowedTargetDegrees.length ? allowedTargetDegrees : [0];
+        const targetIndex = allowed[Math.floor(Math.random() * allowed.length)];
+        const targetMidi = currentKeyRoot + targetIndex;
         Tone.Transport.scheduleOnce(() => {
           synth.triggerAttackRelease(Tone.Frequency(targetMidi, 'midi').toNote(), '2n');
           status.textContent = `Target Note`;
