@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ear Training App</title>
+  <title>Good Ear by Vishu</title>
   <script src="https://cdn.jsdelivr.net/npm/tone@latest/build/Tone.js"></script>
   <style>
     body {
@@ -83,7 +83,7 @@
   </style>
 </head>
 <body>
-  <h1>🎧 Ear Training App (Prototype)</h1>
+  <h1>🎧 Good Ear</h1>
   <p id="status">Click start to begin.</p>
   <div class="keyboard" id="keyboard"></div>
   <div id="buttons">
@@ -348,7 +348,7 @@
         const targetMidi = currentKeyRoot + targetIndex;
         Tone.Transport.scheduleOnce(() => {
           synth.triggerAttackRelease(Tone.Frequency(targetMidi, 'midi').toNote(), '2n');
-          status.textContent = `Target Note`;
+          status.textContent = solfegeLabels[targetIndex];
         }, "+3");
 
         const totalStepsToTonic = scheduleWalk(currentKeyRoot, targetMidi);
